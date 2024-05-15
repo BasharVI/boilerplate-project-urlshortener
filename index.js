@@ -16,20 +16,18 @@ app.use(cors());
 
 app.use("/public", express.static(`${process.cwd()}/public`));
 
-mongoose.connect(
-  "mongodb+srv://user1:freecodecamp@samplefreecode.h66woeq.mongodb.net/",
-  {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  }
-);
+mongoose.connect(process.env.MONGO_URL, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+});
 
 const urlSchema = new mongoose.Schema({
   original_url: { type: String, required: true },
-  short_url: { type: String, required: true },
+  short_url: { type: Number, required: true, unique: true },
 });
 
 const Url = mongoose.model("Url", urlSchema);
+
 app.get("/", function (req, res) {
   res.sendFile(process.cwd() + "/views/index.html");
 });
@@ -42,7 +40,8 @@ app.post("/api/shorturl", function (req, res) {
     if (err) {
       res.json({ error: "invalid url" });
     } else {
-      const shortUrl = shortId.generate();
+      const maxUrl = await Url.findOne().sort({ short_url: -1 }).exec();
+      const shortUrl = maxUrl ? maxUrl.short_url + 1 : 1;
       const newUrl = new Url({
         original_url: original_url,
         short_url: shortUrl,
@@ -58,7 +57,7 @@ app.post("/api/shorturl", function (req, res) {
 });
 
 app.get("/api/shorturl/:shorturl", (req, res) => {
-  const shortUrl = req.params.shorturl;
+  const shortUrl = parseInt(req.params.shorturl);
   Url.findOne({ short_url: shortUrl }).then((data) => {
     if (!data) return console.error(err);
     if (data) {
