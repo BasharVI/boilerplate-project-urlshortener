@@ -35,6 +35,10 @@ app.get("/", function (req, res) {
 // Your first API endpoint
 app.post("/api/shorturl", function (req, res) {
   const original_url = req.body.url;
+  const urlRegex = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,})([\/\w.-]*)*\/?$/;
+  if (!urlRegex.test(original_url)) {
+    return res.json({ error: "invalid url" });
+  }
   const urlObj = url.parse(original_url);
   dns.lookup(urlObj.hostname, async (err) => {
     if (err) {
